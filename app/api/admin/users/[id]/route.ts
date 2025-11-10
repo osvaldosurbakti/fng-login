@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { connectDB } from "@/lib/mongodb";
-import User from "@/models/User";
+import User, { IUser } from "@/models/User";
 import bcrypt from "bcryptjs";
 
 // Helper function untuk authorization
@@ -59,7 +59,7 @@ export async function PUT(
     await connectDB();
 
     // Check if user exists - SEKARANG GUNAKAN id YANG SUDAH DI-AWAIT
-    const existingUser = await User.findById(id);
+        const existingUser = await User.findById(id) as IUser | null;
     if (!existingUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -67,7 +67,7 @@ export async function PUT(
     // Prevent role escalation - superadmin cannot be demoted by others
     if (existingUser.role === "superadmin" && 
         role !== "superadmin" && 
-        authCheck.session.user.id !== existingUser._id.toString()) {
+        authCheck.session!.user.id !== String(existingUser._id)) {
       return NextResponse.json(
         { error: "Cannot change superadmin role" },
         { status: 400 }
@@ -155,7 +155,7 @@ export async function DELETE(
     await connectDB();
 
     // Check if user exists - SEKARANG GUNAKAN id YANG SUDAH DI-AWAIT
-    const user = await User.findById(id);
+    const user = await User.findById(id) as IUser | null;
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -169,7 +169,7 @@ export async function DELETE(
     }
 
     // Prevent user from deleting themselves
-    if (user._id.toString() === authCheck.session.user.id) {
+    if (String(user._id) === authCheck.session!.user.id) {
       return NextResponse.json(
         { error: "Cannot delete your own account" },
         { status: 400 }
@@ -179,7 +179,7 @@ export async function DELETE(
     await User.findByIdAndDelete(id); // Gunakan id yang sudah di-await
 
     // Log the deletion action
-    console.log(`User ${user.email} deleted by ${authCheck.session.user.email}`);
+    console.log(`User ${user.email} deleted by ${authCheck.session!.user.email}`);
 
     return NextResponse.json(
       { message: "User deleted successfully" },

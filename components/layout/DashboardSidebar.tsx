@@ -9,7 +9,11 @@ import {
   UserGroupIcon, 
   ChartBarIcon, 
   CogIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CubeIcon,
+  ShoppingBagIcon,
+  ClipboardDocumentListIcon,
+  QueueListIcon
 } from "@heroicons/react/24/outline";
 
 const navigation = [
@@ -17,6 +21,24 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: HomeIcon,
+    roles: ["superadmin", "admin"],
+  },
+  {
+    name: "Menu Management",
+    href: "/dashboard/menu",
+    icon: QueueListIcon,
+    roles: ["superadmin", "admin"],
+  },
+  {
+    name: "Stock Management", 
+    href: "/dashboard/stock",
+    icon: ClipboardDocumentListIcon,
+    roles: ["superadmin", "admin"],
+  },
+  {
+    name: "Orders",
+    href: "/dashboard/orders",
+    icon: ShoppingBagIcon,
     roles: ["superadmin", "admin"],
   },
   {
