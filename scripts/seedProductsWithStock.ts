@@ -1,13 +1,11 @@
 // scripts/seedProductsWithStock.ts
-import { config } from 'dotenv';
-import { resolve } from 'path';
+// Load dotenv dengan require (lebih reliable) - HARUS DI BARIS PALING ATAS
+require('dotenv').config({ path: '.env.local' });
 
-// Load environment variables
-config({ path: resolve(process.cwd(), '.env.local') });
+console.log("🔧 Seeder - MONGODB_URI:", process.env.MONGODB_URI ? "✅ LOADED" : "❌ MISSING");
 
-// gunakan import relatif agar ts-node dapat menemukan module saat dijalankan dari scripts/
-import { connectDB } from "../lib/mongodb";
-import Product from "../models/Product";
+import { connectDB } from "@/lib/mongodb";
+import Product from "@/models/Product";
 
 const menuItems = [
   // Minuman - Rp6,000.00
@@ -52,10 +50,21 @@ async function seedProductsWithStock() {
   try {
     console.log("🌱 Starting product seeding with stock data...");
     
+    // Debug: Check environment variables
+    console.log("🔧 Checking environment variables...");
+    console.log("MONGODB_URI:", process.env.MONGODB_URI ? "✅ Loaded" : "❌ Missing");
+    
+    if (!process.env.MONGODB_URI) {
+      console.error("❌ MONGODB_URI is required but not found!");
+      console.error("💡 Please check your .env.local file");
+      process.exit(1);
+    }
+
     await connectDB();
     console.log("✅ Connected to database");
 
-    // HAPUS SEMUA DATA LAMA (optional - hati-hati!)
+    // HAPUS SEMUA DATA LAMA
+    console.log("🗑️ Clearing existing products...");
     const deleteResult = await Product.deleteMany({});
     console.log(`🗑️ Deleted ${deleteResult.deletedCount} old products`);
 
@@ -63,36 +72,36 @@ async function seedProductsWithStock() {
     
     // Insert new products dengan data stock yang lengkap
     const products = await Product.insertMany(
-      menuItems.map(item => {
-        const currentStock = 50;
-        const minimumStock = 10;
-        return {
-          ...item,
-          description: "",
-          isAvailable: true,
-          image: "",
-          imagePublicId: "",
-          currentStock,
-          minimumStock,
-          isTrackStock: true,
-          // biarkan model menghitung lowStockAlert via pre-save hook,
-          // atau set explicit:
-          lowStockAlert: currentStock <= minimumStock
-          // sku tidak diset agar model default/generate bekerja
-        };
-      })
+      menuItems.map(item => ({
+        ...item,
+        description: "",
+        isAvailable: true,
+        image: "",
+        imagePublicId: "",
+        
+        // STOCK DATA BARU
+        currentStock: 50,          // Stok awal
+        minimumStock: 10,          // Alert ketika <= 10
+        isTrackStock: true,        // Track stok enabled
+        lowStockAlert: false,      // Akan di-update otomatis oleh model
+      }))
     );
 
     console.log(`✅ Successfully seeded ${products.length} products with stock data!`);
+    console.log("");
     console.log("📊 Sample products created:");
+    console.log("══════════════════════════════════════");
     
-    products.slice(0, 3).forEach(product => {
-      console.log(`   - ${product.name} | SKU: ${product.sku} | Stock: ${product.currentStock} ${product.unit}`);
+    products.slice(0, 5).forEach(product => {
+      console.log(`   🏷️  ${product.name}`);
+      console.log(`      SKU: ${product.sku} | Stock: ${product.currentStock} ${product.unit}`);
+      console.log(`      Price: Rp ${product.price.toLocaleString('id-ID')}`);
+      console.log("");
     });
 
     console.log("🎯 Next steps:");
     console.log("   1. Go to /dashboard/stock to see inventory");
-    console.log("   2. Go to /dashboard/menu to manage products");
+    console.log("   2. Go to /dashboard/menu to manage products"); 
     console.log("   3. Use bulk update to adjust stock levels");
     
     process.exit(0);

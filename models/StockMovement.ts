@@ -1,68 +1,67 @@
 // models/StockMovement.ts
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IStockMovement extends Document {
   product: mongoose.Types.ObjectId;
-  type: 'in' | 'out' | 'adjustment';     // Masuk/Keluar/Adjustment
+  type: 'in' | 'out' | 'adjustment' | 'initial';
   quantity: number;
-  reference: string;                     // No referensi (PO, SO, Adjustment)
-  notes: string;
+  reference?: string;
+  notes?: string;
   previousStock: number;
   newStock: number;
-  adjustedBy: string;                    // User ID yang melakukan adjustment
+  adjustedBy: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const stockMovementSchema = new mongoose.Schema(
+const stockMovementSchema = new Schema(
   {
     product: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Product',
-      required: true,
+      required: true
     },
     type: {
       type: String,
-      enum: ['in', 'out', 'adjustment'],
-      required: true,
+      enum: ['in', 'out', 'adjustment', 'initial'],
+      required: true
     },
     quantity: {
       type: Number,
       required: true,
-      min: 0,
+      min: 0
     },
     reference: {
       type: String,
-      required: true,
-      trim: true,
+      trim: true
     },
     notes: {
       type: String,
-      trim: true,
-      default: "",
+      trim: true
     },
     previousStock: {
       type: Number,
-      required: true,
+      required: true
     },
     newStock: {
       type: Number,
-      required: true,
+      required: true
     },
     adjustedBy: {
       type: String,
-      required: true,
-    },
+      required: true
+    }
   },
   {
-    timestamps: true,
+    timestamps: true
   }
 );
 
-// Create index for better query performance
+// Index for better query performance
 stockMovementSchema.index({ product: 1, createdAt: -1 });
-stockMovementSchema.index({ reference: 1 });
+stockMovementSchema.index({ createdAt: -1 });
 
-const StockMovement: Model<IStockMovement> =
-  mongoose.models.StockMovement || mongoose.model<IStockMovement>("StockMovement", stockMovementSchema);
+const StockMovement: Model<IStockMovement> = 
+  mongoose.models.StockMovement || mongoose.model<IStockMovement>('StockMovement', stockMovementSchema);
 
 export default StockMovement;

@@ -1,8 +1,11 @@
 // models/Product.ts
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
 import mongoose, { Document, Model } from "mongoose";
 
 // Define valid unit types
-export type ProductUnit = "pcs" | "pack" | "box" | "kg" | "gram" | "ml" | "botol";
+export type ProductUnit = "pcs" | "pack" | "box" | "kg" | "gram" | "ml" | "botol" | "sachet";
 
 export interface IProduct extends Document {
   name: string;
@@ -15,11 +18,15 @@ export interface IProduct extends Document {
   
   // Stock Management Fields
   sku: string;
-  unit: ProductUnit;  // Use the defined type
+  unit: ProductUnit;
   currentStock: number;
   minimumStock: number;
   isTrackStock: boolean;
   lowStockAlert: boolean;
+  
+  // Tambahkan field untuk tracking
+  lastStockUpdate?: Date;
+  lastUpdatedBy?: string;
   
   createdAt: Date;
   updatedAt: Date;
@@ -70,7 +77,7 @@ const productSchema = new mongoose.Schema(
     unit: {
       type: String,
       default: "pcs",
-      enum: ["pcs", "pack", "box", "kg", "gram", "ml", "botol"],
+      enum: ["pcs", "pack", "box", "kg", "gram", "ml", "botol", "sachet"],
     },
     currentStock: {
       type: Number,
@@ -90,13 +97,15 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    
+    // Tambahan field untuk history tracking
+    lastStockUpdate: Date,
+    lastUpdatedBy: String
   },
   {
     timestamps: true,
   }
 );
-
-// ... rest of the model code remains the same
 
 // Auto-generate SKU jika tidak diisi
 productSchema.pre('save', function(next) {
@@ -118,7 +127,6 @@ productSchema.pre('save', function(next) {
   next();
 });
 
-// Prevent model recompilation error in development
 const Product: Model<IProduct> =
   mongoose.models.Product || mongoose.model<IProduct>("Product", productSchema);
 

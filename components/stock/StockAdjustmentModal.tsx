@@ -7,7 +7,7 @@ interface Product {
   _id: string;
   name: string;
   currentStock: number;
-  unit?: "pcs" | "pack" | "box" | "kg" | "gram" | "ml" | "botol";
+  unit?: "pcs" | "pack" | "box" | "kg" | "gram" | "ml" | "botol" | "sachet";
   minimumStock?: number; // Tambahkan ini
   isTrackStock?: boolean; // Tambahkan ini
 }

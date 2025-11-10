@@ -1,24 +1,22 @@
-// scripts/seedProductsWithStock.ts
-import { config } from 'dotenv';
-import { resolve } from 'path';
+// scripts/seedSimple.js - NO TYPESCRIPT, JUST PLAIN NODE.JS
+require('dotenv').config({ path: '.env.local' });
 
-// Load environment variables
-config({ path: resolve(process.cwd(), '.env.local') });
+const mongoose = require('mongoose');
 
-// gunakan import relatif agar ts-node dapat menemukan module saat dijalankan dari scripts/
-import { connectDB } from "../lib/mongodb";
-import Product from "../models/Product";
+console.log("🔧 MONGODB_URI:", process.env.MONGODB_URI ? "✅ LOADED" : "❌ MISSING");
+
+if (!process.env.MONGODB_URI) {
+  console.error("❌ MONGODB_URI is missing!");
+  process.exit(1);
+}
 
 const menuItems = [
-  // Minuman - Rp6,000.00
   { name: "Tora Bika Cappuccino", price: 6000, category: "minuman", unit: "sachet" },
   { name: "Milo", price: 6000, category: "minuman", unit: "sachet" },
   { name: "Good Day Cappuccino", price: 6000, category: "minuman", unit: "sachet" },
   { name: "ABC Iced Klepon", price: 6000, category: "minuman", unit: "botol" },
   { name: "Max Tea Tarik", price: 6000, category: "minuman", unit: "sachet" },
   { name: "Good Day Freeze", price: 6000, category: "minuman", unit: "sachet" },
-  
-  // Minuman - Rp5,000.00
   { name: "Energen Jahe", price: 5000, category: "minuman", unit: "sachet" },
   { name: "Kopi Susu ABC", price: 5000, category: "minuman", unit: "botol" },
   { name: "Luwak White Koffie", price: 5000, category: "minuman", unit: "sachet" },
@@ -27,20 +25,12 @@ const menuItems = [
   { name: "Kapal Api Special Mix", price: 5000, category: "minuman", unit: "sachet" },
   { name: "Tora Bika Moka", price: 5000, category: "minuman", unit: "sachet" },
   { name: "Energen Coklat", price: 5000, category: "minuman", unit: "sachet" },
-  
-  // Makanan - Rp7,000.00
   { name: "Mie Instant (All varian)", price: 7000, category: "makanan", unit: "pcs" },
-  
-  // Makanan - Rp6,000.00
   { name: "Dumpling Keju (3 pcs)", price: 6000, category: "makanan", unit: "pack" },
   { name: "Dumpling Ayam (3 pcs)", price: 6000, category: "makanan", unit: "pack" },
-  
-  // Makanan - Rp5,000.00
   { name: "Sosis Besar Jumbo (1 pcs)", price: 5000, category: "makanan", unit: "pcs" },
   { name: "Nugget Double (2 pcs)", price: 5000, category: "makanan", unit: "pcs" },
   { name: "Cikuwa + Jamur (3 pcs)", price: 5000, category: "makanan", unit: "pack" },
-  
-  // Makanan - Rp3,000.00
   { name: "Odeng Double (2 pcs)", price: 3000, category: "makanan", unit: "pcs" },
   { name: "Tofu Special (3 pcs)", price: 3000, category: "makanan", unit: "pack" },
   { name: "Bakso Bakar (3 pcs)", price: 3000, category: "makanan", unit: "pack" },
@@ -48,53 +38,42 @@ const menuItems = [
   { name: "Sosis Merah (1 pcs)", price: 3000, category: "makanan", unit: "pcs" },
 ];
 
-async function seedProductsWithStock() {
+async function seedProducts() {
   try {
-    console.log("🌱 Starting product seeding with stock data...");
-    
-    await connectDB();
-    console.log("✅ Connected to database");
+    console.log("🌱 Connecting to MongoDB...");
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("✅ Connected to MongoDB");
 
-    // HAPUS SEMUA DATA LAMA (optional - hati-hati!)
-    const deleteResult = await Product.deleteMany({});
-    console.log(`🗑️ Deleted ${deleteResult.deletedCount} old products`);
+    // Dynamically import the Product model
+    const Product = mongoose.model('Product') || require('../models/Product').default;
 
-    console.log("📦 Inserting products with stock data...");
-    
-    // Insert new products dengan data stock yang lengkap
+    console.log("🗑️ Clearing existing products...");
+    await Product.deleteMany({});
+    console.log("🗑️ All old products deleted");
+
+    console.log("📦 Inserting new products...");
     const products = await Product.insertMany(
-      menuItems.map(item => {
-        const currentStock = 50;
-        const minimumStock = 10;
-        return {
-          ...item,
-          description: "",
-          isAvailable: true,
-          image: "",
-          imagePublicId: "",
-          currentStock,
-          minimumStock,
-          isTrackStock: true,
-          // biarkan model menghitung lowStockAlert via pre-save hook,
-          // atau set explicit:
-          lowStockAlert: currentStock <= minimumStock
-          // sku tidak diset agar model default/generate bekerja
-        };
-      })
+      menuItems.map(item => ({
+        ...item,
+        description: "",
+        isAvailable: true,
+        image: "",
+        imagePublicId: "",
+        currentStock: 50,
+        minimumStock: 10,
+        isTrackStock: true,
+        lowStockAlert: false,
+      }))
     );
 
-    console.log(`✅ Successfully seeded ${products.length} products with stock data!`);
-    console.log("📊 Sample products created:");
-    
-    products.slice(0, 3).forEach(product => {
-      console.log(`   - ${product.name} | SKU: ${product.sku} | Stock: ${product.currentStock} ${product.unit}`);
+    console.log(`✅ SUCCESS! Seeded ${products.length} products`);
+    console.log("📊 Sample:");
+    products.slice(0, 3).forEach(p => {
+      console.log(`   🏷️ ${p.name} | SKU: ${p.sku} | Stock: ${p.currentStock} ${p.unit}`);
     });
 
-    console.log("🎯 Next steps:");
-    console.log("   1. Go to /dashboard/stock to see inventory");
-    console.log("   2. Go to /dashboard/menu to manage products");
-    console.log("   3. Use bulk update to adjust stock levels");
-    
+    await mongoose.disconnect();
+    console.log("🔌 Disconnected from MongoDB");
     process.exit(0);
   } catch (error) {
     console.error("❌ Seeding failed:", error);
@@ -102,4 +81,4 @@ async function seedProductsWithStock() {
   }
 }
 
-seedProductsWithStock();
+seedProducts();

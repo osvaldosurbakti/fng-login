@@ -4,8 +4,8 @@
 import { useState } from "react";
 import StockAdjustmentModal from "./StockAdjustmentModal";
 import BulkStockUpdateModal from "./BulkStockUpdateModal";
-import { ProductUnit } from "@/models/Product"; // Import the type
-
+import StockHistoryModal from "./StockHistoryModal";
+import { ProductUnit } from "@/models/Product";
 
 interface Product {
   _id: string;
@@ -13,7 +13,7 @@ interface Product {
   price: number;
   category: "makanan" | "minuman";
   sku?: string;
-  unit?: ProductUnit;  // Use the specific type
+  unit?: ProductUnit;
   currentStock: number;
   minimumStock: number;
   isTrackStock: boolean;
@@ -28,12 +28,19 @@ interface StockTableProps {
 export default function StockTable({ products }: StockTableProps) {
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductForHistory, setSelectedProductForHistory] = useState<Product | null>(null);
   const [filter, setFilter] = useState<"all" | "low-stock" | "out-of-stock" | "no-tracking">("all");
 
   const handleAdjustStock = (product: Product) => {
     setSelectedProduct(product);
     setIsAdjustmentModalOpen(true);
+  };
+
+  const handleViewHistory = (product: Product) => {
+    setSelectedProductForHistory(product);
+    setIsHistoryModalOpen(true);
   };
 
   const handleBulkUpdate = () => {
@@ -277,6 +284,12 @@ export default function StockTable({ products }: StockTableProps) {
                       Adjust
                     </button>
                     <button
+                      onClick={() => handleViewHistory(product)}
+                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                      History
+                    </button>
+                    <button
                       onClick={() => handleToggleStockTracking(product._id, product.isTrackStock)}
                       className={product.isTrackStock ? "text-orange-600 hover:text-orange-900" : "text-green-600 hover:text-green-900"}
                     >
@@ -334,6 +347,12 @@ export default function StockTable({ products }: StockTableProps) {
                   Adjust Stock
                 </button>
                 <button
+                  onClick={() => handleViewHistory(product)}
+                  className="w-full text-left bg-gray-50 text-gray-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+                >
+                  View History
+                </button>
+                <button
                   onClick={() => handleToggleStockTracking(product._id, product.isTrackStock)}
                   className={`w-full px-3 py-2 rounded-md text-sm font-medium ${
                     product.isTrackStock ? 'bg-orange-50 text-orange-700 hover:bg-orange-100' : 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -388,6 +407,12 @@ export default function StockTable({ products }: StockTableProps) {
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         products={products.filter(p => p.isTrackStock)}
+      />
+
+      <StockHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        product={selectedProductForHistory}
       />
     </>
   );
