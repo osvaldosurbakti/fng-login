@@ -6,6 +6,7 @@ import StockAdjustmentModal from "./StockAdjustmentModal";
 import BulkStockUpdateModal from "./BulkStockUpdateModal";
 import StockHistoryModal from "./StockHistoryModal";
 import { ProductUnit } from "@/models/Product";
+import { StockProduct } from "@/types/stock";
 
 interface Product {
   _id: string;
@@ -412,7 +413,7 @@ export default function StockTable({ products }: StockTableProps) {
       <StockHistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
-        product={selectedProductForHistory}
+        product={selectedProductForHistory as StockProduct}
       />
     </>
   );
